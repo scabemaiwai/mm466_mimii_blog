@@ -565,3 +565,464 @@ set(gca, 'xticklabel', {'RMS','ZCR','Centroid'});
 legend({'Normal','Abnormal'});
 title('Mean Feature Values by Class');
 ylabel('Mean Value');
+
+
+%%Progress two ->
+isp(meta.machine)
+
+snrFolders = {
+    'D:\Users\S11202884\Desktop\MIMII\0dB\mat_batches_0dB', ...
+    'D:\Users\S11202884\Desktop\MIMII\-6dB\mat_batches_-6dB', ...
+    'D:\Users\S11202884\Desktop\MIMII\6dB\mat_batches_6dB'
+};
+
+allMachines = {};
+allConditions = {};
+
+for f = 1:length(snrFolders)
+    batchFiles = dir(fullfile(snrFolders{f}, 'batch_*.mat'));
+    for k = 1:length(batchFiles)
+        data = load(fullfile(snrFolders{f}, batchFiles(k).name));
+        if isfield(data, 'batchMeta')
+            for i = 1:length(data.batchMeta)
+                meta = data.batchMeta{i};
+                if isfield(meta, 'machine')
+                    allMachines{end+1} = meta.machine;
+                    allConditions{end+1} = meta.condition;
+                end
+            end
+        end
+    end
+end
+
+disp("Unique machine types found:");
+unique(allMachines)
+
+disp("Unique conditions found:");
+unique(allConditions)
+
+
+% === SETTINGS ===
+snrLevels = {'0dB', '-6dB', '6dB'};  % SNR folders
+baseInputDir = 'D:\Users\S11202884\Desktop\MIMII';  % base folder containing the SNR folders
+outputBaseDir = 'D:\Users\S11202884\Desktop\MIMII';  % where to save mat batches
+batchSize = 500;
+
+for s = 1:length(snrLevels)
+    snr = snrLevels{s};
+    fprintf('\nProcessing SNR: %s\n', snr);
+
+    % Input and output paths
+    inputDir = fullfile(baseInputDir, snr, 'slider');
+    outputDir = fullfile(outputBaseDir, ['mat_batches_' snr]);
+    if ~exist(outputDir, 'dir')
+        mkdir(outputDir);
+    end
+
+    % Collect all .wav files with metadata
+    wavFiles = {};
+    labels = [];
+    metaData = [];
+
+    machineFolders = dir(inputDir);
+    machineFolders = machineFolders([machineFolders.isdir] & ~startsWith({machineFolders.name}, '.'));
+
+    for m = 1:length(machineFolders)
+        idFolder = fullfile(inputDir, machineFolders(m).name);
+        for conditionType = ["normal", "abnormal"]
+            conditionDir = fullfile(idFolder, conditionType);
+            files = dir(fullfile(conditionDir, '*.wav'));
+
+            for f = 1:length(files)
+                wavFiles{end+1} = fullfile(conditionDir, files(f).name);
+                labels(end+1) = strcmp(conditionType, 'abnormal');  % 1 = abnormal, 0 = normal
+
+                meta.machine = 'slider';
+                meta.id = machineFolders(m).name;
+                meta.condition = conditionType;
+                meta.filename = files(f).name;
+                metaData{end+1} = meta;
+            end
+        end
+    end
+
+    % === Convert to .mat batches ===
+    fprintf("Converting %d files to batches...\n", length(wavFiles));
+    numFiles = length(wavFiles);
+    batchIndex = 1;
+
+    for i = 1:batchSize:numFiles
+        endIdx = min(i+batchSize-1, numFiles);
+        thisBatchSize = endIdx - i + 1;
+
+        batchAudio = cell(thisBatchSize,1);
+        batchLabels = zeros(thisBatchSize,1);
+        batchMeta = cell(thisBatchSize,1);
+
+        for j = 1:thisBatchSize
+            idx = i + j - 1;
+            [y, ~] = audioread(wavFiles{idx});
+            if size(y,2) > 1  % Convert stereo to mono if needed
+                y = mean(y,2);
+            end
+            batchAudio{j} = y;
+            batchLabels(j) = labels(idx);
+            batchMeta{j} = metaData{idx};
+        end
+
+        saveFileName = fullfile(outputDir, sprintf('batch_%03d.mat', batchIndex));
+        save(saveFileName, 'batchAudio', 'batchLabels', 'batchMeta');
+        fprintf("Saved: %s\n", saveFileName);
+        batchIndex = batchIndex + 1;
+    end
+end
+
+snrLevels = {'0dB', '-6dB', '6dB'};
+basePath = 'D:\Users\S11202884\Desktop\MIMII';
+
+fs = 16000;
+windowLength = 256;
+overlap = 128;
+nfft = 512;
+
+for s = 1:length(snrLevels)
+    snr = snrLevels{s};
+    batchFolder = fullfile(basePath, ['mat_batches_' snr]);
+    batchFiles = dir(fullfile(batchFolder, 'batch_*.mat'));
+
+    foundNormal = false;
+    foundAbnormal = false;
+
+    for k = 1:length(batchFiles)
+        data = load(fullfile(batchFolder, batchFiles(k).name));
+        for i = 1:length(data.batchMeta)
+            meta = data.batchMeta{i};
+            if contains(lower(meta.machine), 'slider')
+                if strcmp(meta.condition, 'normal') && ~foundNormal
+                    x = data.batchAudio{i};
+                    [S, F, T, P] = spectrogram(x, windowLength, overlap, nfft, fs);
+                    figure('Name', ['slider - normal - ', snr]);
+                    surf(T, F, 10*log10(P), 'EdgeColor', 'none');
+                    axis xy; axis tight;
+                    xlabel('Time (s)'); ylabel('Frequency (Hz)');
+                    title(['Spectrogram: slider - normal (' snr ')']);
+                    colormap jet; colorbar; view(0, 90);
+                    foundNormal = true;
+                elseif strcmp(meta.condition, 'abnormal') && ~foundAbnormal
+                    x = data.batchAudio{i};
+                    [S, F, T, P] = spectrogram(x, windowLength, overlap, nfft, fs);
+                    figure('Name', ['slider - abnormal - ', snr]);
+                    surf(T, F, 10*log10(P), 'EdgeColor', 'none');
+                    axis xy; axis tight;
+                    xlabel('Time (s)'); ylabel('Frequency (Hz)');
+                    title(['Spectrogram: slider - abnormal (' snr ')']);
+                    colormap jet; colorbar; view(0, 90);
+                    foundAbnormal = true;
+                end
+            end
+
+            if foundNormal && foundAbnormal
+                break;
+            end
+        end
+        if foundNormal && foundAbnormal
+            break;
+        end
+    end
+end
+% === SETTINGS ===
+snrLevels = {'0dB', '-6dB', '6dB'};  % SNR folders
+baseInputDir = 'D:\Users\S11202884\Desktop\MIMII';  % base folder containing the SNR folders
+outputBaseDir = 'D:\Users\S11202884\Desktop\MIMII';  % where to save mat batches
+batchSize = 500;
+
+for s = 1:length(snrLevels)
+    snr = snrLevels{s};
+    fprintf('\nProcessing SNR: %s\n', snr);
+
+    % Input and output paths
+    inputDir = fullfile(baseInputDir, snr, 'slider');
+    outputDir = fullfile(outputBaseDir, ['mat_batches_' snr]);
+    if ~exist(outputDir, 'dir')
+        mkdir(outputDir);
+    end
+
+    % Collect all .wav files with metadata
+    wavFiles = {};
+    labels = [];
+    metaData = [];
+
+    machineFolders = dir(inputDir);
+    machineFolders = machineFolders([machineFolders.isdir] & ~startsWith({machineFolders.name}, '.'));
+
+    for m = 1:length(machineFolders)
+        idFolder = fullfile(inputDir, machineFolders(m).name);
+        for conditionType = ["normal", "abnormal"]
+            conditionDir = fullfile(idFolder, conditionType);
+            files = dir(fullfile(conditionDir, '*.wav'));
+
+            for f = 1:length(files)
+                wavFiles{end+1} = fullfile(conditionDir, files(f).name);
+                labels(end+1) = strcmp(conditionType, 'abnormal');  % 1 = abnormal, 0 = normal
+
+                meta.machine = 'slider';
+                meta.id = machineFolders(m).name;
+                meta.condition = conditionType;
+                meta.filename = files(f).name;
+                metaData{end+1} = meta;
+            end
+        end
+    end
+
+    % === Convert to .mat batches ===
+    fprintf("Converting %d files to batches...\n", length(wavFiles));
+    numFiles = length(wavFiles);
+    batchIndex = 1;
+
+    for i = 1:batchSize:numFiles
+        endIdx = min(i+batchSize-1, numFiles);
+        thisBatchSize = endIdx - i + 1;
+
+        batchAudio = cell(thisBatchSize,1);
+        batchLabels = zeros(thisBatchSize,1);
+        batchMeta = cell(thisBatchSize,1);
+
+        for j = 1:thisBatchSize
+            idx = i + j - 1;
+            [y, ~] = audioread(wavFiles{idx});
+            if size(y,2) > 1  % Convert stereo to mono if needed
+                y = mean(y,2);
+            end
+            batchAudio{j} = y;
+            batchLabels(j) = labels(idx);
+            batchMeta{j} = metaData{idx};
+        end
+
+        saveFileName = fullfile(outputDir, sprintf('batch_%03d.mat', batchIndex));
+        save(saveFileName, 'batchAudio', 'batchLabels', 'batchMeta');
+        fprintf("Saved: %s\n", saveFileName);
+        batchIndex = batchIndex + 1;
+    end
+end
+
+snrLevels = {'0dB', '-6dB', '6dB'};
+basePath = 'D:\Users\S11202884\Desktop\MIMII';
+
+fs = 16000;
+windowLength = 256;
+overlap = 128;
+nfft = 512;
+
+for s = 1:length(snrLevels)
+    snr = snrLevels{s};
+    batchFolder = fullfile(basePath, ['mat_batches_' snr]);
+    batchFiles = dir(fullfile(batchFolder, 'batch_*.mat'));
+
+    foundNormal = false;
+    foundAbnormal = false;
+
+    for k = 1:length(batchFiles)
+        data = load(fullfile(batchFolder, batchFiles(k).name));
+        for i = 1:length(data.batchMeta)
+            meta = data.batchMeta{i};
+            if contains(lower(meta.machine), 'slider')
+                if strcmp(meta.condition, 'normal') && ~foundNormal
+                    x = data.batchAudio{i};
+                    [S, F, T, P] = spectrogram(x, windowLength, overlap, nfft, fs);
+                    figure('Name', ['slider - normal - ', snr]);
+                    surf(T, F, 10*log10(P), 'EdgeColor', 'none');
+                    axis xy; axis tight;
+                    xlabel('Time (s)'); ylabel('Frequency (Hz)');
+                    title(['Spectrogram: slider - normal (' snr ')']);
+                    colormap jet; colorbar; view(0, 90);
+                    foundNormal = true;
+                elseif strcmp(meta.condition, 'abnormal') && ~foundAbnormal
+                    x = data.batchAudio{i};
+                    [S, F, T, P] = spectrogram(x, windowLength, overlap, nfft, fs);
+                    figure('Name', ['slider - abnormal - ', snr]);
+                    surf(T, F, 10*log10(P), 'EdgeColor', 'none');
+                    axis xy; axis tight;
+                    xlabel('Time (s)'); ylabel('Frequency (Hz)');
+                    title(['Spectrogram: slider - abnormal (' snr ')']);
+                    colormap jet; colorbar; view(0, 90);
+                    foundAbnormal = true;
+                end
+            end
+
+            if foundNormal && foundAbnormal
+                break;
+            end
+        end
+        if foundNormal && foundAbnormal
+            break;
+        end
+    end
+end
+
+f contains(lower(allMeta{i}.machine), 'slider')
+        sliderIdx(i) = true;
+    end
+end
+
+% === Extract slider PCA scores and SNR labels ===
+sliderScores = score(sliderIdx, 1:3);         % PC1, PC2, PC3
+sliderSNR = snrLabels(sliderIdx);            % Corresponding SNR values
+
+% === Plot settings ===
+colors = [0 0 1; 0 0.6 0; 1 0 0];             % Blue, Green, Red
+snrLevels = [-6, 0, 6];
+figure;
+hold on;
+
+for s = 1:length(snrLevels)
+    idx = sliderSNR == snrLevels(s);
+    scatter3(sliderScores(idx,1), sliderScores(idx,2), sliderScores(idx,3), ...
+             40, colors(s,:), 'filled', 'DisplayName', sprintf('%ddB', snrLevels(s)));
+end
+
+xlabel('PC1'); ylabel('PC2'); zlabel('PC3');
+title('PCA Projection: Slider Machine Across SNR Levels');
+legend;
+grid on; view(45, 30);
+Like the others, the -6 dB (blue) samples are most spread out and elevated in PC3, showing more variance due to noise.
+The 6 dB (red) samples form a tighter, lower cluster — indicating more consistent behavior in cleaner recordings.
+PCA again helps distinguish how background noise level alters the acoustic patterns for this machine type.
+
+Boxplot for Fan over the 3 SNR's
+% === Step 1: Filter fan data ===
+fanIdx = false(length(allMeta), 1);
+for i = 1:length(allMeta)
+    if contains(lower(allMeta{i}.machine), 'fan')
+        fanIdx(i) = true;
+    end
+end
+
+% === Extract fan features and SNR labels ===
+fanFeatures = allFeatures(fanIdx, :);
+fanSNR = snrLabels(fanIdx);  % SNR: -6, 0, or 6
+featureNames = {'RMS', 'ZCR', 'Centroid', 'Bandwidth', 'RollOff', ...
+                'Flatness', 'Crest', 'Entropy'};
+
+% === Step 2: Create boxplots for each feature grouped by SNR ===
+figure;
+for f = 1:size(fanFeatures, 2)
+    subplot(4, 2, f);
+    boxplot(fanFeatures(:, f), fanSNR, ...
+        'Labels', {'-6dB', '0dB', '6dB'});
+    title(featureNames{f});
+    xlabel('SNR Level');
+    ylabel('Value');
+    grid on;
+end
+
+sgtitle('Fan Machine: Feature Distributions Across SNR Levels');
+%The boxplots for all eight extracted features of the fan machine reveal clear patterns in how signal characteristics vary with different SNR levels. At -6 dB, features such as 
+% RMS, Spectral Centroid, Bandwidth, and RollOff exhibit greater spread and higher values, indicating increased
+% signal energy and variability caused by noise. ZCR and Crest also show higher variability under noise,
+% reflecting the presence of more rapid waveform fluctuations and sharper transients. 
+% Spectral Flatness increases with noise, a common indication of randomness in the signal.
+% In contrast, at 6 dB, the features tend to stabilize and cluster more tightly, reflecting cleaner and more consistent acoustic patterns. 
+% Spectral Entropy, while not as drastically affected, shows a subtle trend toward more uniform distribution as SNR improves. 
+% Overall, the plots demonstrate that noise level significantly impacts acoustic features,
+% and this insight will be important for model training and interpretation.
+
+Boxplot for Pump data
+% === Step 1: Filter pump data ===
+pumpIdx = false(length(allMeta), 1);
+for i = 1:length(allMeta)
+    if contains(lower(allMeta{i}.machine), 'pump')
+        pumpIdx(i) = true;
+    end
+end
+
+% === Extract pump features and SNR labels ===
+pumpFeatures = allFeatures(pumpIdx, :);
+pumpSNR = snrLabels(pumpIdx);  % SNR: -6, 0, or 6
+featureNames = {'RMS', 'ZCR', 'Centroid', 'Bandwidth', 'RollOff', ...
+                'Flatness', 'Crest', 'Entropy'};
+
+% === Step 2: Create boxplots for each feature grouped by SNR ===
+figure;
+for f = 1:size(pumpFeatures, 2)
+    subplot(4, 2, f);
+    boxplot(pumpFeatures(:, f), pumpSNR, ...
+        'Labels', {'-6dB', '0dB', '6dB'});
+    title(featureNames{f});
+    xlabel('SNR Level');
+    ylabel('Value');
+    grid on;
+end
+
+sgtitle('Pump Machine: Feature Distributions Across SNR Levels');
+%The boxplots for all eight features of the pump machine reveal how acoustic characteristics are affected by changes in noise levels (SNR). 
+% At -6 dB, most features such as RMS, ZCR, Spectral Centroid, and Spectral Flatness show greater variability and higher median values compared to cleaner signals. 
+% These patterns suggest the influence of background noise in boosting energy and increasing randomness in the signal.
+% As the SNR improves to 6 dB, the distribution tightens, and feature values become more consistent and centered.
+% Notably, Spectral Crest shows a significant reduction in outliers with increased SNR, while Spectral Entropy trends toward greater uniformity.
+% Overall, these plots demonstrate that pump sound signals become more acoustically stable and predictable at higher SNRs, which is crucial for reliable anomaly detection.
+
+Valve Machine: Boxplots Across SNR
+% === Step 1: Filter valve data ===
+valveIdx = false(length(allMeta), 1);
+for i = 1:length(allMeta)
+    if contains(lower(allMeta{i}.machine), 'valve')
+        valveIdx(i) = true;
+    end
+end
+
+% === Extract valve features and SNR labels ===
+valveFeatures = allFeatures(valveIdx, :);
+valveSNR = snrLabels(valveIdx);
+featureNames = {'RMS', 'ZCR', 'Centroid', 'Bandwidth', 'RollOff', ...
+                'Flatness', 'Crest', 'Entropy'};
+
+% === Step 2: Boxplots by SNR ===
+figure;
+for f = 1:size(valveFeatures, 2)
+    subplot(4, 2, f);
+    boxplot(valveFeatures(:, f), valveSNR, ...
+        'Labels', {'-6dB', '0dB', '6dB'});
+    title(featureNames{f});
+    xlabel('SNR Level');
+    ylabel('Value');
+    grid on;
+end
+
+sgtitle('Valve Machine: Feature Distributions Across SNR Levels');
+%The boxplots for the valve machine across different SNR levels show significant changes in feature behavior influenced by noise.
+% At -6 dB, features like RMS, Crest, and Flatness show increased variability and higher values, indicating the presence of more signal irregularities and energy fluctuations due to background noise. 
+% As SNR improves to 6 dB, features such as Spectral Centroid, Bandwidth, and RollOff show a consistent upward trend, reflecting cleaner high-frequency content and more defined spectral boundaries. 
+% Spectral Entropy also becomes more concentrated, suggesting a reduction in signal randomness at higher SNRs. 
+% These trends reinforce that PCA and feature-based approaches are capable of capturing meaningful acoustic distinctions caused by changes in noise level in valve-type machinery.
+
+Slider Machine: Boxplots Across SNR
+% === Step 1: Filter slider data ===
+sliderIdx = false(length(allMeta), 1);
+for i = 1:length(allMeta)
+    if contains(lower(allMeta{i}.machine), 'slider')
+        sliderIdx(i) = true;
+    end
+end
+
+% === Extract slider features and SNR labels ===
+sliderFeatures = allFeatures(sliderIdx, :);
+sliderSNR = snrLabels(sliderIdx);
+
+% === Step 2: Boxplots by SNR ===
+figure;
+for f = 1:size(sliderFeatures, 2)
+    subplot(4, 2, f);
+    boxplot(sliderFeatures(:, f), sliderSNR, ...
+        'Labels', {'-6dB', '0dB', '6dB'});
+    title(featureNames{f});
+    xlabel('SNR Level');
+    ylabel('Value');
+    grid on;
+end
+
+sgtitle('Slider Machine: Feature Distributions Across SNR Levels');
+%For the slider machine, the boxplots reveal clear trends in how each feature responds to varying noise levels.
+% At -6 dB, features such as RMS, ZCR, and Crest exhibit higher medians and wider spreads, indicating elevated signal energy and waveform instability due to ambient noise. 
+% As the SNR improves to 6 dB, features like Centroid, Bandwidth, and RollOff gradually rise in value, suggesting clearer high-frequency content and a more pronounced spectral shape. 
+% Spectral Flatness and Entropy also tighten in distribution, reflecting improved tonal structure and reduced randomness in cleaner recordings. 
+% Overall, the boxplots demonstrate that the slider machine’s sound profile becomes significantly more stable and structured with increasing SNR — a trend consistent with the other machines.
