@@ -1,3 +1,185 @@
+Sound-Based Anomaly Detection Using the MIMII Dataset
+
+This project focuses on developing a machine learning pipeline for acoustic-based fault detection in industrial machines using the MIMII dataset. The workflow includes data preprocessing, feature extraction, dimensionality reduction, visualization, and classification. This document outlines all completed work, along with explanations and justifications, to serve as a technical summary and GitHub blog reference.
+
+
+ Dataset and Project Scope
+
+The MIMII dataset contains audio recordings from four industrial machines:
+
+Fan
+Pump
+Valve
+Slider
+
+Each machine has samples under normal and abnormal conditions, recorded at three Signal-to-Noise Ratio (SNR) levels:
+
+-6 dB (high noise)
+0 dB (medium noise)
+6 dB (low noise)
+
+Each machine has multiple IDs to simulate different operational units.
+
+
+ What Has Been Done So Far
+
+ 1. Data Conversion: WAV to MAT Format
+
+Action:
+
+* All `.wav` files were converted to `.mat` format in batches of 500 samples.
+* Separate folders were created for each SNR and machine type.
+* `batchAudio`, `batchLabels`, and `batchMeta` were stored in each `.mat` file.
+
+Justification:
+
+* Efficiency: MATLAB reads `.mat` files significantly faster than `.wav` files.
+* Scalability: Batch conversion reduces memory usage and simplifies downstream processing.
+* Consistency: Having unified data structures allows easy looping through files for feature extraction and analysis.
+
+
+ 2. Audio Preprocessing
+
+Action:
+
+* Stereo audio files were converted to mono by averaging channels.
+* Basic checks ensured that each file is loadable, non-empty, and conforms to a consistent sample rate (`fs = 16000`).
+
+Justification:
+
+* Model Uniformity: Most signal processing and ML models expect single-channel input.
+* Comparability: Normalizing input format ensures consistency across all machine types.
+
+
+ 
+ 3. Feature Extraction (8 Features)
+
+Action:
+* The following eight features were extracted per audio sample:
+  * RMS: Energy of signal
+  * ZCR: Zero-crossing rate (temporal detail)
+  * Spectral Centroid: Frequency balance
+  * Spectral Bandwidth: Spread of frequencies
+  * Spectral RollOff: High-frequency threshold
+  * Spectral Flatness: Tonality vs. noisiness
+  * Spectral Crest: Peak sharpness
+  * Spectral Entropy: Signal randomness
+
+Justification:
+* Signal Insight: These features capture both **time-domain** and **frequency-domain** properties.
+* Fault Sensitivity: Faulty machines often have distinct energy, harmonic, and spectral characteristics.
+* Relevance: Widely used in anomaly detection literature.
+
+ 
+ 
+ 4. Feature Dataset Assembly
+
+Action:
+* Features from all batches and SNRs were merged into one file: `features_ALL_SNR.mat`
+* Also includes:
+
+  * `allFeatures`: \[Nx8] feature matrix
+  * `allLabels`: 0 (normal), 1 (abnormal)
+  * `snrLabels`: SNR value per sample
+  * `allMeta`: machine, ID, condition, file path
+
+Justification:
+* Unified Analysis: Allows easy splitting/filtering by machine type, condition, or SNR.
+* Compatibility: Ready to be used with PCA, classification, or clustering models.
+
+
+
+5. Principal Component Analysis (PCA)
+
+Action:
+* Normalized features were passed into PCA.
+* Generated:
+
+  * `score`: projected features
+  * `coeff`: feature loadings
+  * `explained`: variance captured by each PC
+* Saved to `pca_results.mat`
+
+Justification:
+
+* Dimensionality Reduction: Reduce 8D feature space to 2D/3D for visualization.
+* Feature Evaluation: See which features contribute most to variance.
+* Separation Testing: Evaluate whether normal and abnormal samples form separable clusters.
+
+
+ 
+ 6. Data Visualization
+
+A. PCA Scatter Plots
+
+* 2D (PC1 vs PC2) and 3D (PC1-PC3) plots
+* Colored by:
+  * Normal vs Abnormal
+  * SNR Levels
+  * Machine Type
+
+Justification:
+* Visual Diagnosis: Highlights clustering, overlaps, and potential classification boundaries.
+
+
+B. Boxplots for All Features
+
+* Grouped by machine and SNR.
+* Shows spread and skew of features under different noise levels.
+
+Justification:
+
+* tatistical Insight: Helps identify noise-sensitive or condition-sensitive features.
+
+C. Spectrograms (Time-Frequency)
+
+* Plotted from `batchAudio` for 0/1 labels.
+* One normal + one abnormal sample per machine per SNR.
+
+Justification:
+* Human Interpretation: Helps visualize faults not easily captured by scalar features.
+
+
+ 
+WHAT IS TO BE DONE NEXT?
+
+1. Classification Model Training
+
+   * Train classifiers (SVM, KNN, Decision Trees, etc.)
+   * Cross-validate and tune hyperparameters
+
+2. Performance Evaluation
+
+   * Accuracy, Precision, Recall, F1-Score, Confusion Matrix
+
+3. Final Report + Deployment Discussion
+
+   * Interpret results
+   * Discuss limitations
+   * Propose future work and real-world integration ideas
+
+
+
+File Summary
+
+| File/Folder            | Description                                            |
+| ---------------------- | ------------------------------------------------------ |
+| `mat_batches_*/`       | `.mat` batch files per SNR (slider handled separately) |
+| `features_ALL_SNR.mat` | Merged feature matrix with labels and metadata         |
+| `pca_results.mat`      | PCA scores, coefficients, explained variance           |
+| `*.png`                | Visualizations: PCA plots, boxplots, spectrograms      |
+| `README.md`            | Project summary and documentation (this file)          |
+
+
+
+Purpose
+
+This project demonstrates how audio signals can be leveraged to detect industrial machine anomalies using a structured machine learning pipeline. It combines practical engineering skills with signal processing and model-driven reasoning to support future applications in predictive maintenance.
+
+
+
+MATLAB CODE
+
 % Base Path only for 0dB
 basePath = 'D:\Users\S11202884\Desktop\MIMII\0dB';  
 
