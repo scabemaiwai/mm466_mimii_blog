@@ -3,6 +3,45 @@ Sound-Based Anomaly Detection Using the MIMII Dataset
 This project focuses on developing a machine learning pipeline for acoustic-based fault detection in industrial machines using the MIMII dataset. The workflow includes data preprocessing, feature extraction, dimensionality reduction, visualization, and classification. This document outlines all completed work, along with explanations and justifications, to serve as a technical summary and GitHub blog reference.
 
 
+
+Tackling Class Imbalance: Manual Oversampling
+
+In real-world industrial datasets like MIMII, it’s common to face class imbalance—where the number of normal samples vastly outnumbers the abnormal (faulty) ones. This imbalance can bias models to favor the majority class, resulting in poor detection of actual faults.
+To counter this, we applied manual oversampling, where we replicated abnormal class samples in our training data to create a more balanced class distribution. Instead of relying on automated SMOTE algorithms, we chose a straightforward and transparent method: simply duplicating the minority class until it matched the number of normal samples. This helped our model give equal attention to both classes during learning.
+
+
+Model Training in MATLAB
+With a balanced training dataset ready, we moved on to training multiple classification models using MATLAB’s Classification Learner App—a powerful GUI-based tool that simplifies model experimentation without writing extensive code.Training Setup
+Before training, we split our preprocessed dataset into:
+•	70% Training
+•	15% Validation
+•	15% Testing
+
+This stratified split ensured both normal and abnormal classes were fairly represented in all subsets.
+We enabled Principal Component Analysis (PCA) to reduce dimensionality, retaining 95% of the variance. This step helped simplify the learning task by compressing features without significant information loss.
+We also configured Misclassification Costs to penalize false negatives more heavily—because missing an actual fault is more critical than flagging a healthy machine.
+
+ 
+Model Choices and Comparison
+We experimented with several models:
+•	Fine KNN
+•	Weighted KNN
+•	Medium Tree
+•	SVM (with adjusted misclassification cost)
+•	Ensemble Bagged Trees
+
+
+Each model was evaluated using:
+•	Accuracy
+•	Precision
+•	Recall
+•	F1-Score
+•	ROC-AUC
+
+
+
+
+
  Dataset and Project Scope
 
 The MIMII dataset contains audio recordings from four industrial machines:
