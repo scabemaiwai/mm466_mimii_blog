@@ -17,10 +17,9 @@ Each machine has samples under normal and abnormal conditions, recorded at three
 
 Each machine has multiple IDs to simulate different operational units.
 
-**
-What Has Been Done So Far**
+**What Has Been Done So Far**
 
-** 1. Data Conversion: WAV to MAT Format**
+**1. Data Conversion: WAV to MAT Format**
 
 Action:
 
@@ -34,8 +33,7 @@ Justification:
 * Scalability: Batch conversion reduces memory usage and simplifies downstream processing.
 * Consistency: Having unified data structures allows easy looping through files for feature extraction and analysis.
 
-**
-2. Audio Preprocessing**
+**2. Audio Preprocessing**
 
 Action:
 
@@ -49,8 +47,7 @@ Justification:
 
 
  
- **3. Feature Extraction (8 Features)
-**
+ **3. Feature Extraction (8 Features)**
 Action:
 * The following eight features were extracted per audio sample:
   * RMS: Energy of signal
@@ -69,7 +66,7 @@ Justification:
 
  
  
-** 4. Feature Dataset Assembly**
+**4. Feature Dataset Assembly**
 
 Action:
 * Features from all batches and SNRs were merged into one file: `features_ALL_SNR.mat`
@@ -105,8 +102,7 @@ Justification:
 
 
  
-** 6. Data Visualization
-**
+**6. Data Visualization**
 A. PCA Scatter Plots
 
 * 2D (PC1 vs PC2) and 3D (PC1-PC3) plots
@@ -169,13 +165,7 @@ File Summary
 
 
 
-Purpose
-
-This project demonstrates how audio signals can be leveraged to detect industrial machine anomalies using a structured machine learning pipeline. It combines practical engineering skills with signal processing and model-driven reasoning to support future applications in predictive maintenance.
-
-
-
-MATLAB CODE
+**MATLAB CODE**
 
 % Base Path only for 0dB
 basePath = 'D:\Users\S11202884\Desktop\MIMII\0dB';  
@@ -609,12 +599,12 @@ size(features0dB.allLabels)
 size(featuresNeg6.allLabels)
 size(features6dB.allLabels)
 
-% === Load individual feature sets ===
+% Load individual feature sets 
 f0 = load('D:\Users\S11202884\Desktop\MIMII\0dB\features_0dB.mat');
 fN6 = load('D:\Users\S11202884\Desktop\MIMII\-6dB\features_-6dB.mat');
 f6 = load('D:\Users\S11202884\Desktop\MIMII\6dB\features_6dB.mat');
 
-% === Fix shapes and types ===
+%  Fix shapes and types 
 f0.allFeatures  = double(f0.allFeatures);
 fN6.allFeatures = double(fN6.allFeatures);
 f6.allFeatures  = double(f6.allFeatures);
@@ -627,7 +617,7 @@ f0.allMeta  = f0.allMeta(:);
 fN6.allMeta = fN6.allMeta(:);
 f6.allMeta  = f6.allMeta(:);
 
-% === Sanity checks ===
+% Sanity checks
 assert(size(f0.allFeatures, 2) == size(fN6.allFeatures, 2) && size(f6.allFeatures, 2), ...
     'Feature columns do not match.');
 
@@ -663,10 +653,10 @@ load('D:\Users\S11202884\Desktop\MIMII\features_allSNR.mat');
 % === Normalize Features ===
 featuresNorm = normalize(combinedFeatures);
 
-% === Apply PCA ===
+%  Apply PCA 
 [coeff, score, ~, ~, explained] = pca(featuresNorm);
 
-% === Display Variance Explained ===
+%  Display Variance Explained 
 figure;
 plot(cumsum(explained), '-o');
 xlabel('Number of Principal Components');
@@ -674,7 +664,7 @@ ylabel('Cumulative Variance Explained (%)');
 title('PCA Variance Explained (All SNR Levels)');
 grid on;
 
-% === Plot 1: PCA (Color by Label: Normal vs Abnormal) ===
+%  Plot 1: PCA (Color by Label: Normal vs Abnormal)
 figure;
 gscatter(score(:,1), score(:,2), combinedLabels, 'br', 'ox');
 xlabel('Principal Component 1');
@@ -683,7 +673,7 @@ title('PCA Projection: Normal vs Abnormal');
 legend({'Normal','Abnormal'});
 grid on;
 
-% === Plot 2: PCA (Color by SNR) ===
+% Plot 2: PCA (Color by SNR)
 figure;
 snrColorMap = containers.Map([-6, 0, 6], {'g', 'b', 'r'});  % assign colors
 
@@ -746,7 +736,7 @@ title('Mean Feature Values by Class');
 ylabel('Mean Value');
 
 
-%%Progress two ->
+**Progress two ->**
 isp(meta.machine)
 
 snrFolders = {
@@ -781,7 +771,7 @@ disp("Unique conditions found:");
 unique(allConditions)
 
 
-% === SETTINGS ===
+%  SETTINGS
 snrLevels = {'0dB', '-6dB', '6dB'};  % SNR folders
 baseInputDir = 'D:\Users\S11202884\Desktop\MIMII';  % base folder containing the SNR folders
 outputBaseDir = 'D:\Users\S11202884\Desktop\MIMII';  % where to save mat batches
@@ -909,7 +899,7 @@ for s = 1:length(snrLevels)
         end
     end
 end
-% === SETTINGS ===
+%  SETTINGS
 snrLevels = {'0dB', '-6dB', '6dB'};  % SNR folders
 baseInputDir = 'D:\Users\S11202884\Desktop\MIMII';  % base folder containing the SNR folders
 outputBaseDir = 'D:\Users\S11202884\Desktop\MIMII';  % where to save mat batches
@@ -953,7 +943,7 @@ for s = 1:length(snrLevels)
         end
     end
 
-    % === Convert to .mat batches ===
+    %  Convert to .mat batches 
     fprintf("Converting %d files to batches...\n", length(wavFiles));
     numFiles = length(wavFiles);
     batchIndex = 1;
@@ -1043,11 +1033,11 @@ f contains(lower(allMeta{i}.machine), 'slider')
     end
 end
 
-% === Extract slider PCA scores and SNR labels ===
+%  Extract slider PCA scores and SNR labels
 sliderScores = score(sliderIdx, 1:3);         % PC1, PC2, PC3
 sliderSNR = snrLabels(sliderIdx);            % Corresponding SNR values
 
-% === Plot settings ===
+%  Plot settings 
 colors = [0 0 1; 0 0.6 0; 1 0 0];             % Blue, Green, Red
 snrLevels = [-6, 0, 6];
 figure;
@@ -1082,7 +1072,7 @@ fanSNR = snrLabels(fanIdx);  % SNR: -6, 0, or 6
 featureNames = {'RMS', 'ZCR', 'Centroid', 'Bandwidth', 'RollOff', ...
                 'Flatness', 'Crest', 'Entropy'};
 
-% === Step 2: Create boxplots for each feature grouped by SNR ===
+%Step 2: Create boxplots for each feature grouped by SNR 
 figure;
 for f = 1:size(fanFeatures, 2)
     subplot(4, 2, f);
