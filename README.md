@@ -17,10 +17,10 @@ Each machine has samples under normal and abnormal conditions, recorded at three
 
 Each machine has multiple IDs to simulate different operational units.
 
+**
+What Has Been Done So Far**
 
-** What Has Been Done So Far
-
- 1. Data Conversion: WAV to MAT Format**
+** 1. Data Conversion: WAV to MAT Format**
 
 Action:
 
@@ -34,9 +34,9 @@ Justification:
 * Scalability: Batch conversion reduces memory usage and simplifies downstream processing.
 * Consistency: Having unified data structures allows easy looping through files for feature extraction and analysis.
 
-
- **2. Audio Preprocessing
 **
+2. Audio Preprocessing**
+
 Action:
 
 * Stereo audio files were converted to mono by averaging channels.
