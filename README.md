@@ -1,16 +1,16 @@
-Sound-Based Anomaly Detection Using the MIMII Dataset
+**LATEST UPDATE**
+**Sound-Based Anomaly Detection Using the MIMII Dataset**
 
 This project focuses on developing a machine learning pipeline for acoustic-based fault detection in industrial machines using the MIMII dataset. The workflow includes data preprocessing, feature extraction, dimensionality reduction, visualization, and classification. This document outlines all completed work, along with explanations and justifications, to serve as a technical summary and GitHub blog reference.
 
 
-
-Tackling Class Imbalance: Manual Oversampling
+**Tackling Class Imbalance: Manual Oversampling**
 
 In real-world industrial datasets like MIMII, it’s common to face class imbalance—where the number of normal samples vastly outnumbers the abnormal (faulty) ones. This imbalance can bias models to favor the majority class, resulting in poor detection of actual faults.
 To counter this, we applied manual oversampling, where we replicated abnormal class samples in our training data to create a more balanced class distribution. Instead of relying on automated SMOTE algorithms, we chose a straightforward and transparent method: simply duplicating the minority class until it matched the number of normal samples. This helped our model give equal attention to both classes during learning.
 
 
-Model Training in MATLAB
+**Model Training in MATLAB**
 With a balanced training dataset ready, we moved on to training multiple classification models using MATLAB’s Classification Learner App—a powerful GUI-based tool that simplifies model experimentation without writing extensive code.Training Setup
 Before training, we split our preprocessed dataset into:
 •	70% Training
@@ -22,7 +22,7 @@ We enabled Principal Component Analysis (PCA) to reduce dimensionality, retainin
 We also configured Misclassification Costs to penalize false negatives more heavily—because missing an actual fault is more critical than flagging a healthy machine.
 
  
-Model Choices and Comparison
+**Model Choices and Comparison**
 We experimented with several models:
 •	Fine KNN
 •	Weighted KNN
@@ -30,8 +30,7 @@ We experimented with several models:
 •	SVM (with adjusted misclassification cost)
 •	Ensemble Bagged Trees
 
-
-Each model was evaluated using:
+**Each model was evaluated using:**
 •	Accuracy
 •	Precision
 •	Recall
@@ -40,8 +39,7 @@ Each model was evaluated using:
 
 
 
-
-
+**FIRST BLOG - WEEKS 6-10**
  Dataset and Project Scope
 
 The MIMII dataset contains audio recordings from four industrial machines:
@@ -60,9 +58,9 @@ Each machine has samples under normal and abnormal conditions, recorded at three
 Each machine has multiple IDs to simulate different operational units.
 
 
- What Has Been Done So Far
+** What Has Been Done So Far
 
- 1. Data Conversion: WAV to MAT Format
+ 1. Data Conversion: WAV to MAT Format**
 
 Action:
 
@@ -77,8 +75,8 @@ Justification:
 * Consistency: Having unified data structures allows easy looping through files for feature extraction and analysis.
 
 
- 2. Audio Preprocessing
-
+ **2. Audio Preprocessing
+**
 Action:
 
 * Stereo audio files were converted to mono by averaging channels.
@@ -91,8 +89,8 @@ Justification:
 
 
  
- 3. Feature Extraction (8 Features)
-
+ **3. Feature Extraction (8 Features)
+**
 Action:
 * The following eight features were extracted per audio sample:
   * RMS: Energy of signal
@@ -111,7 +109,7 @@ Justification:
 
  
  
- 4. Feature Dataset Assembly
+** 4. Feature Dataset Assembly**
 
 Action:
 * Features from all batches and SNRs were merged into one file: `features_ALL_SNR.mat`
@@ -128,7 +126,7 @@ Justification:
 
 
 
-5. Principal Component Analysis (PCA)
+**5. Principal Component Analysis (PCA)**
 
 Action:
 * Normalized features were passed into PCA.
@@ -147,8 +145,8 @@ Justification:
 
 
  
- 6. Data Visualization
-
+** 6. Data Visualization
+**
 A. PCA Scatter Plots
 
 * 2D (PC1 vs PC2) and 3D (PC1-PC3) plots
@@ -161,7 +159,7 @@ Justification:
 * Visual Diagnosis: Highlights clustering, overlaps, and potential classification boundaries.
 
 
-B. Boxplots for All Features
+**B. Boxplots for All Features**
 
 * Grouped by machine and SNR.
 * Shows spread and skew of features under different noise levels.
@@ -180,7 +178,7 @@ Justification:
 
 
  
-WHAT IS TO BE DONE NEXT?
+**WHAT IS TO BE DONE NEXT?**
 
 1. Classification Model Training
 
