@@ -1,3 +1,222 @@
+# Acoustic Fault Detection using the MIMII Dataset - A Machine Learning Approach
+
+
+## Introduction
+
+This project tackles the classification of industrial machine conditions using audio data from the MIMII dataset. Our goal was to train a supervised machine learning model to detect whether a machine sound is normal or abnormal, and to further classify it by machine type. Eventually, this evolved into a multiclass model that identifies both the machine type and its condition.
+
+---
+
+## 1. Audio Conversion: `.wav` to `.mat`
+
+### What We Did
+
+We began with `.wav` audio recordings for different machines (fan, pump, valve, slider) under both normal and abnormal conditions. Each file also came from different machine IDs and SNR (Signal-to-Noise Ratio) levels. We created a MATLAB function `convert_wav_to_mat` that traversed through the dataset folders and converted each audio sample into MATLAB-readable `.mat` format.
+
+Each `.mat` entry saved:
+
+* The audio signal (converted to mono)
+* A binary label (0 = normal, 1 = abnormal)
+* Metadata: machine type, ID, condition, and filename
+
+### Why We Did It
+
+`.wav` files are heavy to process in MATLAB, especially in bulk. `.mat` files are much more efficient in terms of I/O and batch processing. It also allowed us to bundle audio signals with useful metadata for easy feature extraction later.
+
+### How Users Can Do It
+
+```matlab
+convert_wav_to_mat('MIMII_root_folder', 'Processed_Mat_Folder', 500);
+```
+
+This processes the files in batches of 500 samples.
+
+---
+
+## 2. Feature Extraction
+
+### What We Did
+
+Using the `.mat` files, we extracted 8 audio features that represent both time-domain and frequency-domain characteristics:
+
+* Root Mean Square (RMS)
+* Zero Crossing Rate (ZCR)
+* Spectral Centroid
+* Spectral Bandwidth
+* Spectral Roll-off
+* Spectral Flatness
+* Crest Factor
+* Spectral Entropy
+
+### Why These Features?
+
+These features are standard in digital audio analysis. They capture:
+
+* **Amplitude dynamics** (RMS, Crest Factor)
+* **Frequency content** (Spectral Centroid, Bandwidth)
+* **Noise characteristics** (Entropy, ZCR)
+
+Normal machine sounds tend to be steady and harmonic, while abnormal sounds exhibit higher energy, more irregular patterns, and broader frequency components.
+
+### How Users Can Do It
+
+```matlab
+extract_features_from_batch('Processed_Mat_Folder', 'features_output.mat');
+```
+
+This produces:
+
+* `allFeatures`: numeric matrix (samples x 8 features)
+* `allLabels`: 0 or 1
+* `allMeta`: cell array of structs containing metadata
+* `allSNRs`: numerical vector
+
+---
+
+## 3. Dataset Aggregation and Label Encoding
+
+### What We Did
+
+We combined all batches into a single dataset (`features_allSNR_combined.mat`) and generated a new label:
+
+```matlab
+multiLabel = machine_type + "_" + condition;
+```
+
+This gave us 8 unique classes like:
+
+* fan\_normal
+* fan\_abnormal
+* pump\_normal
+* slider\_abnormal
+
+We converted this string label to categorical for multiclass training.
+
+### Why?
+
+The goal evolved from binary classification (normal vs abnormal) to a **multiclass setup**, which would identify both machine type and condition. This provides deeper fault localization and has more real-world value.
+
+---
+
+## 4. Data Cleaning and Preprocessing
+
+### What We Did
+
+* Skipped corrupted `.wav` files during conversion (implicitly cleaned).
+* Dropped stereo audio channels (converted to mono).
+* Normalized features using MATLAB's `normalize()` function.
+
+### Why?
+
+Clean and scaled data ensures:
+
+* Faster model convergence
+* Equal treatment of all features
+* Avoidance of skew caused by high-magnitude features
+
+### How?
+
+```matlab
+allFeatures = normalize(allFeatures);
+```
+
+---
+
+## 5. Exploratory Data Analysis (EDA)
+
+### What We Did
+
+* **PCA Analysis**: Showed PC1 explained >97% variance.
+* **Boxplots and Correlation Matrix**: Revealed which features were most informative.
+* **Scatter plots**: Highlighted clusters of normal vs abnormal.
+
+### Why?
+
+EDA helped us:
+
+* Understand class distribution
+* Detect outliers
+* Choose meaningful features
+
+---
+
+## 6. Principal Component Analysis (PCA)
+
+### What We Did
+
+Enabled PCA in the Classification Learner App to retain 95% explained variance.
+
+### Why?
+
+* To reduce feature dimensionality
+* Combat noise and multicollinearity
+
+### How?
+
+In the Classification Learner App:
+
+```text
+Options > PCA > Enable > 95% Variance
+```
+
+---
+
+## 7. Model Training
+
+### What We Did
+
+We trained multiple models using MATLAB’s **Classification Learner App**:
+
+* Decision Trees (Coarse, Medium)
+* KNN (Cosine, Fine, Weighted)
+* Ensemble (Bagged Trees)
+* SVM
+* Neural Networks
+
+Final best model for multiclass was **Model 2.1**, an ensemble method.
+
+### Input: `allFeatures`
+
+### Response: `allLabelsMulti`
+
+### Validation: 5-fold cross-validation
+
+### Why?
+
+Ensemble methods are:
+
+* Robust to noise
+* Less prone to overfitting
+* Good with imbalanced datasets
+
+---
+
+## 8. Evaluation and Confusion Matrix
+
+### What We Did
+
+* Plotted Confusion Matrix for 8 classes
+* Observed highest misclassifications between slider and pump classes
+
+### Why?
+
+To identify:
+
+* Where the model struggles (e.g., noisy or similar sounds)
+* Which classes need better representation or features
+
+---
+
+## Conclusion
+
+This project successfully demonstrated the full pipeline of an acoustic-based machine learning classifier using MATLAB:
+
+* From audio preprocessing
+* To multiclass labeling
+* To model training and validation
+
+This work now serves as a foundation to explore ensemble stacking, hybrid classifiers, or even double-stage architectures (first detect abnormal, then classify fault type).
+
 
 **FIRST BLOG - WEEKS 6-10**
  Dataset and Project Scope
