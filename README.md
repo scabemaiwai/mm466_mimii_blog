@@ -138,6 +138,14 @@ EDA helped us:
 * Detect outliers
 * Choose meaningful features
 
+Picture
+
+
+
+
+
+
+
 ---
 
 ## 6. Principal Component Analysis (PCA)
