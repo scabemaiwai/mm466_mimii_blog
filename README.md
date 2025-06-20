@@ -226,8 +226,10 @@ This project successfully demonstrated the full pipeline of an acoustic-based ma
 This work now serves as a foundation to explore ensemble stacking, hybrid classifiers, or even double-stage architectures (first detect abnormal, then classify fault type).
 
 
+
+
+
 **FIRST BLOG - WEEKS 6-10**
- Dataset and Project Scope
 
 The MIMII dataset contains audio recordings from four industrial machines:
 
@@ -255,10 +257,10 @@ Action:
 * `batchAudio`, `batchLabels`, and `batchMeta` were stored in each `.mat` file.
 
 Justification:
-
 * Efficiency: MATLAB reads `.mat` files significantly faster than `.wav` files.
 * Scalability: Batch conversion reduces memory usage and simplifies downstream processing.
 * Consistency: Having unified data structures allows easy looping through files for feature extraction and analysis.
+
 
 **2. Audio Preprocessing**
 
@@ -431,9 +433,6 @@ We experimented with several models:
 •	Recall
 •	F1-Score
 •	ROC-AUC
-
-
-
 
 
 % Spectral Flatness and Entropy also tighten in distribution, reflecting improved tonal structure and reduced randomness in cleaner recordings. 
