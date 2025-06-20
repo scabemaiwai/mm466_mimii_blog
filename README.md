@@ -214,6 +214,20 @@ To identify:
 * Which classes need better representation or features
 
 ---
+##10. Function File Roles (Summary)
+
+1. convert_wav_to_mat.m
+
+This function recursively navigates the directory structure of the MIMII dataset, reads each .wav file, converts it to mono audio, and stores it in a .mat file along with essential metadata. Metadata includes the machine type (e.g., fan, pump), machine ID, operating condition (normal/abnormal), and filename. The data is saved in batches to improve processing efficiency and later used for feature extraction.
+
+2. extract_features_from_batch.m
+
+This function reads each batch .mat file, extracts 8 descriptive audio features per file (RMS, ZCR, Spectral Centroid, etc.), and stores the results in a structured format. It outputs allFeatures (feature matrix), allLabels (binary condition labels), allMeta (machine info), and allSNRs (signal noise ratio levels). This forms the core input for PCA and model training.
+
+3. combine_all_batches.m
+
+Used to merge feature outputs from multiple .mat batch files into a single dataset (features_allSNR_combined.mat). This simplifies analysis by ensuring all samples are in one array. The script concatenates feature matrices, labels, SNR values, and metadata into unified variables for downstream tasks.
+
 
 ## Conclusion
 
