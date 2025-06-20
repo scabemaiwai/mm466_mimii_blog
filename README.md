@@ -228,8 +228,8 @@ This work now serves as a foundation to explore ensemble stacking, hybrid classi
 
 
 
-
-**FIRST BLOG - WEEKS 6-10**
+---
+##FIRST BLOG - WEEKS 6-10
 
 The MIMII dataset contains audio recordings from four industrial machines:
 
@@ -394,8 +394,8 @@ File Summary
 
 
 
-
-**LATEST UPDATE**
+---
+##LATEST UPDATE
 **Sound-Based Anomaly Detection Using the MIMII Dataset**
 
 This project focuses on developing a machine learning pipeline for acoustic-based fault detection in industrial machines using the MIMII dataset. The workflow includes data preprocessing, feature extraction, dimensionality reduction, visualization, and classification. This document outlines all completed work, along with explanations and justifications, to serve as a technical summary and GitHub blog reference.
